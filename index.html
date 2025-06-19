@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calyx Customer Profit Prediction System</title>
+    <meta name="description" content="Advanced ML-powered customer lifetime value prediction with Monte Carlo simulation">
+    <meta name="keywords" content="machine learning, profit prediction, Monte Carlo simulation, customer analytics">
+    <meta name="author" content="Calyx Analytics Team">
+    
+    <!-- Open Graph tags for social sharing -->
+    <meta property="og:title" content="Calyx Customer Profit Prediction System">
+    <meta property="og:description" content="Advanced ML-powered customer lifetime value prediction with Monte Carlo simulation">
+    <meta property="og:type" content="website">
+    
+    <!-- External CDN resources -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
+    
+    <style>
+        /* CSS variables for easy theming */
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            --bg-color: #f5f7fa;
+            --card-bg: white;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --border-color: #e1e5e9;
+            --shadow: 0 5px 15px rgba(0,0,0,0.08);
+            --shadow-hover: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+            50% { transform: translate(-50%, -50%) rotate(180deg); }
+        }
+
+        .header h1 {
+            position: relative;
+            z-index: 1;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            position: relative;
+            z-index: 1;
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .section {
+            background: var(--card-bg);
+            margin: 20px 0;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid #667eea;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        button {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        button:hover::before {
+            left: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        input, select {
+            padding: 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .metric-card {
+            background: var(--secondary-gradient);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 10px;
+            min-width: 150px;
+            box-shadow: 0 5px 15px rgba(240, 147, 251, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px) scale(1.05);
+        }
+
+        .metric-card h3 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: var(--shadow);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .data-table th {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+
+        .data-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.3s ease;
+        }
+
+        .data-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .data-table tr:nth-child(even) {
+            background-color: #fbfbfb;
+        }
+
+        .prediction-result {
+            background: var(--success-gradient);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #20bf6b;
+            box-shadow: var(--shadow);
+        }
+
+        .status-new { 
+            color: #27ae60; 
+            font-weight: bold; 
+            padding: 4px 8px;
+            background: rgba(39, 174, 96, 0.1);
+            border-radius: 4px;
+        }
+        .status-open { 
+            color: #f39c12; 
+            font-weight: bold; 
+            padding: 4px 8px;
+            background: rgba(243, 156, 18, 0.1);
+            border-radius: 4px;
+        }
+        .status-closed { 
+            color: #e74c3c; 
+            font-weight: bold; 
+            padding: 4px 8px;
+            background: rgba(231, 76, 60, 0.1);
+            border-radius: 4px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .customer-detail {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #2196f3;
+        }
+
+        .risk-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .risk-low { background: #d4edda; color: #155724; }
+        .risk-medium { background: #fff3cd; color: #856404; }
+        .risk-high { background: #f8d7da; color: #721c24; }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .controls button,
+            .controls input,
+            .controls select {
+                width: 100%;
+                margin: 5px 0;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* GitHub ribbon */
+        .github-corner {
+            position: fixed;
+            top: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        .github-corner svg {
+            fill: #667eea;
+            color: #fff;
+            position: absolute;
+            top: 0;
+            border: 0;
+            right: 0;
+        }
+
+        .github-corner:hover .octo-arm {
+            animation: octocat-wave 560ms ease-in-out;
+        }
+
+        @keyframes octocat-wave {
+            0%, 100% { transform: rotate(0) }
+            20%, 60% { transform: rotate(-25deg) }
+            40%, 80% { transform: rotate(10deg) }
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body>
+    <!-- GitHub corner -->
+    <a href="https://github.com/YOUR_USERNAME/calyx-profit-prediction" class="github-corner" aria-label="View source on GitHub">
+        <svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true">
+            <path d="m0,0 0,250 250,0 0,-135.4c-15.9,4.3-32.6,5.2-49.1,2.5c-22.3-3.7-43.3-14.4-58.3-31.4l-73.1,0z"></path>
+            <path d="m128,109c-15-9-9-19-9-19c3-7,2-11,2-11c-1-7,3-2,3-2c4,4,2,11,2,11c-2.5,10.5,5.5,14.5,13,14.5c8.5,0,16.5-4,16.5-14.5c0,0,2.5-7,2.5-11c0-4-4-2-4-2s4-2,3,2c0,0-1,4,2,11c0,0,6,10-9,19" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
+        </svg>
+    </a>
+
+    <div class="header">
+        <h1>🚀 Calyx Customer Profit Prediction System</h1>
+        <p>Advanced ML-powered customer lifetime value prediction with Monte Carlo simulation</p>
+    </div>
+
+    <div class="section">
+        <h2>🎯 System Overview</h2>
+        <p>This system predicts customer profit over the next 36 months using:</p>
+        <ul style="margin: 15px 0; padding-left: 30px;">
+            <li><strong>Historical Contract Analysis:</strong> Analyzing past performance patterns</li>
+            <li><strong>Monte Carlo Simulation:</strong> Modeling opportunity conversion probabilities</li>
+            <li><strong>Machine Learning:</strong> Predicting future profit based on customer characteristics</li>
+            <li><strong>Multi-Contract Support:</strong> Handling customers with multiple contracts</li>
+        </ul>
+        
+        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px 0;">
+            <strong>📝 Demo Note:</strong> This system uses randomly generated data for demonstration purposes. 
+            In a production environment, it would connect to your actual CRM and contract management systems.
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="generateData()" id="generateBtn">
+            🔄 Generate New Dataset
+        </button>
+        <button onclick="runMonteCarloSimulation()" id="monteCarloBtn" disabled>
+            🎲 Run Monte Carlo Simulation
+        </button>
+        <button onclick="trainMLModel()" id="trainBtn" disabled>
+            🧠 Train ML Model
+        </button>
+        <button onclick="makePredictions()" id="predictBtn" disabled>
+            📈 Make Predictions
+        </button>
+        <input type="number" id="monthsToPredict" value="36" placeholder="Months to predict" min="1" max="60">
+        <select id="customerSelect" disabled>
+            <option value="">Select customer for detailed prediction</option>
+        </select>
+    </div>
+
+    <div id="metrics" class="grid"></div>
+
+    <div class="section">
+        <h2>📊 Historical Data Overview</h2>
+        <div class="chart-container">
+            <canvas id="contractChart"></canvas>
+        </div>
+        <div id="dataTable"></div>
+    </div>
+
+    <div class="section">
+        <h2>🎲 Monte Carlo Simulation Results</h2>
+        <div id="monteCarloResults">
+            <p style="text-align: center; color: #666; font-style: italic;">
+                Click "Run Monte Carlo Simulation" to analyze opportunity conversion probabilities
+            </p>
+        </div>
+        <div class="chart-container">
+            <canvas id="simulationChart"></canvas>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🧠 ML Model Performance</h2>
+        <div id="modelMetrics">
+            <p style="text-align: center; color: #666; font-style: italic;">
+                Click "Train ML Model" to build and evaluate the prediction model
+            </p>
+        </div>
+        <div class="chart-container">
+            <canvas id="modelChart"></canvas>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📈 Profit Predictions</h2>
+        <div id="predictionResults">
+            <p style="text-align: center; color: #666; font-style: italic;">
+                Complete all previous steps to generate customer profit predictions
+            </p>
+        </div>
+        <div class="chart-container">
+            <canvas id="predictionChart"></canvas>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Built with ❤️ for Calyx Cloud Computing Solutions | 
+           <a href="https://github.com/YOUR_USERNAME/calyx-profit-prediction" target="_blank">View on GitHub</a>
+        </p>
+    </div>
+
+    <script>
+        // Global data storage
+        let customers = [];
+        let contracts = [];
+        let opportunities = [];
+        let mlModel = null;
+        let simulationResults = [];
+        let charts = {};
+
+        // UI state management
+        function updateButtonStates() {
+            const hasData = customers.length > 0;
+            const hasSimulation = simulationResults.length > 0;
+            const hasModel = mlModel !== null;
+
+            document.getElementById('monteCarloBtn').disabled = !hasData;
+            document.getElementById('trainBtn').disabled = !hasData;
+            document.getElementById('predictBtn').disabled = !(hasData && hasSimulation && hasModel);
+            document.getElementById('customerSelect').disabled = !hasData;
+        }
+
+        function showLoading(buttonId) {
+            const button = document.getElementById(buttonId);
+            const originalText = button.innerHTML;
+            button.innerHTML = '<span class="loading"></span> Processing...';
+            button.disabled = true;
+            return originalText;
+        }
+
+        function hideLoading(buttonId, originalText) {
+            const button = document.getElementById(buttonId);
+            button.innerHTML = originalText;
+            button.disabled = false;
+            updateButtonStates();
+        }
+
+        // Enhanced data generation with more realistic patterns
+        function generateData() {
+            const originalText = showLoading('generateBtn');
+            
+            setTimeout(() => {
+                const companyNames = [
+                    'TechFlow Solutions', 'DataSync Corp', 'CloudPrime Inc', 'InnovateSys',
+                    'DigitalEdge Ltd', 'SmartCore Technologies', 'NextGen Analytics',
+                    'CyberVault Solutions', 'StreamLine Enterprises', 'FlexiCloud Systems',
+                    'ProActive IT', 'Quantum Networks', 'SynergyTech', 'OptimalData Corp',
+                    'FusionSoft Solutions', 'EliteCloud Services', 'RapidScale Inc',
+                    'DynamicSys Solutions', 'TechnovaPrime', 'CloudMaster Technologies'
+                ];
+
+                const industries = ['Healthcare', 'Finance', 'Retail', 'Manufacturing', 'Education', 'Government'];
+                const contractTypes = ['Cloud Infrastructure', 'Data Analytics', 'Cybersecurity', 'IT Support', 'Software Development'];
+
+                customers = [];
+                contracts = [];
+                opportunities = [];
+
+                // Generate customers with correlated characteristics
+                for (let i = 0; i < 20; i++) {
+                    const size = ['Small', 'Medium', 'Large'][Math.floor(Math.random() * 3)];
+                    const sizeMultiplier = size === 'Large' ? 3 : size === 'Medium' ? 2 : 1;
+                    
+                    customers.push({
+                        id: i + 1,
+                        name: companyNames[i],
+                        industry: industries[Math.floor(Math.random() * industries.length)],
+                        size: size,
+                        creditScore: 300 + Math.random() * 500,
+                        relationshipLength: Math.floor(Math.random() * 60) + 1,
+                        avgMonthlySpend: (1000 + Math.random() * 15000) * sizeMultiplier,
+                        supportTickets: Math.floor(Math.random() * 30) + (sizeMultiplier * 5),
+                        satisfactionScore: 2 + Math.random() * 3 // 2-5 scale
+                    });
+                }
+
+                // Generate historical contracts with business logic
+                let contractId = 1;
+                for (let customer of customers) {
+                    const numContracts = Math.floor(Math.random() * 4) + 1;
+                    const sizeMultiplier = customer.size === 'Large' ? 2.5 : customer.size === 'Medium' ? 1.5 : 1;
+                    
+                    for (let j = 0; j < numContracts; j++) {
+                        const startDate = new Date(2022, Math.floor(Math.random() * 36), 1);
+                        const endDate = new Date(startDate);
+                        const contractLength = 6 + Math.floor(Math.random() * 30);
+                        endDate.setMonth(endDate.getMonth() + contractLength);
+                        
+                        const baseValue = 500 + Math.random() * 4500;
+                        const monthlyValue = baseValue * sizeMultiplier;
+                        const totalValue = monthlyValue * contractLength;
+                        
+                        // Profit margin varies by contract type and customer satisfaction
+                        const satisfactionBonus = (customer.satisfactionScore - 2.5) * 0.05;
+                        const profitMargin = 0.15 + Math.random() * 0.25 + satisfactionBonus;
+                        
+                        const status = Date.now() > endDate.getTime() ? 'Closed' : 
+                                     Math.random() > 0.3 ? 'Open' : 'New';
+                        
+                        contracts.push({
+                            id: contractId++,
+                            customerId: customer.id,
+                            type: contractTypes[Math.floor(Math.random() * contractTypes.length)],
+                            status: status,
+                            startDate: startDate,
+                            endDate: endDate,
+                            monthlyValue: monthlyValue,
+                            totalValue: totalValue,
+                            profit: totalValue * profitMargin,
+                            duration: contractLength,
+                            profitMargin: profitMargin
+                        });
+                    }
+
+                    // Generate opportunities based on customer profile
+                    const opportunityChance = customer.satisfactionScore > 3.5 ? 0.8 : 0.4;
+                    if (Math.random() < opportunityChance) {
+                        const numOpportunities = Math.floor(Math.random() * 3) + 1;
+                        for (let k = 0; k < numOpportunities; k++) {
+                            const estimatedValue = (1000 + Math.random() * 19000) * sizeMultiplier;
+                            
+                            // Probability based on customer characteristics
+                            let probability = 0.3;
+                            if (customer.satisfactionScore > 4) probability += 0.2;
+                            if (customer.relationshipLength > 24) probability += 0.15;
+                            if (customer.creditScore > 600) probability += 0.1;
+                            probability = Math.min(0.9, probability + Math.random() * 0.2);
+                            
+                            opportunities.push({
+                                id: `OPP-${customer.id}-${k + 1}`,
+                                customerId: customer.id,
+                                type: contractTypes[Math.floor(Math.random() * contractTypes.length)],
+                                estimatedValue: estimatedValue,
+                                probability: probability,
+                                stage: ['Discovery', 'Proposal', 'Negotiation', 'Final Review'][Math.floor(Math.random() * 4)]
+                            });
+                        }
+                    }
+                }
+
+                updateUI();
+                hideLoading('generateBtn', originalText);
+                console.log('Enhanced data generated:', { 
+                    customers: customers.length, 
+                    contracts: contracts.length, 
+                    opportunities: opportunities.length 
+                });
+            }, 1000);
+        }
+
+        // Monte Carlo simulation with enhanced modeling
+        function runMonteCarloSimulation() {
+            const originalText = showLoading('monteCarloBtn');
+            
+            setTimeout(() => {
+                const simulations = 10000;
+                simulationResults = [];
+
+                for (let opportunity of opportunities) {
+                    const results = [];
+                    
+                    for (let i = 0; i < simulations; i++) {
+                        const random = Math.random();
+                        
+                        // Add market volatility factor
+                        const marketFactor = 0.9 + Math.random() * 0.2; // 90%-110% of expected
+                        const adjustedProbability = opportunity.probability * marketFactor;
+                        
+                        const converted = random < Math.min(0.95, adjustedProbability);
+                        const value = converted ? opportunity.estimatedValue * marketFactor : 0;
+                        results.push(value);
+                    }
+
+                    const avgValue = results.reduce((a, b) => a + b, 0) / simulations;
+                    const conversionRate = results.filter(r => r > 0).length / simulations;
+                    
+                    // Calculate confidence intervals
+                    const sortedResults = results.sort((a, b) => a - b);
+                    const ci25 = sortedResults[Math.floor(simulations * 0.25)];
+                    const ci75 = sortedResults[Math.floor(simulations * 0.75)];
+
+                    simulationResults.push({
+                        opportunityId: opportunity.id,
+                        customerId: opportunity.customerId,
+                        expectedValue: avgValue,
+                        conversionRate: conversionRate,
+                        confidenceInterval: {
+                            lower: ci25,
+                            upper: ci75
+                        },
+                        originalProbability: opportunity.probability
+                    });
+                }
+
+                displayMonteCarloResults();
+                createSimulationChart();
+                hideLoading('monteCarloBtn', originalText);
+            }, 1500);
+        }
+
+        // Enhanced ML model with feature engineering
+        function trainMLModel() {
+            const originalText = showLoading('trainBtn');
+            
+            setTimeout(() => {
+                // Enhanced feature engineering
+                const trainingData = contracts.map(contract => {
+                    const customer = customers.find(c => c.id === contract.customerId);
+                    const customerContracts = contracts.filter(c => c.customerId === customer.id);
+                    
+                    // Advanced features
+                    const avgContractValue = customerContracts.reduce((sum, c) => sum + c.totalValue, 0) / customerContracts.length;
+                    const contractDiversity = new Set(customerContracts.map(c => c.type)).size;
+                    const recentContracts = customerContracts.filter(c => 
+                        (Date.now() - c.startDate.getTime()) < (365 * 24 * 60 * 60 * 1000)
+                    ).length;
+                    
+                    return {
+                        features: [
+                            customer.creditScore / 1000,                    // Normalized credit score
+                            customer.relationshipLength / 60,              // Normalized relationship length
+                            customer.avgMonthlySpend / 50000,              // Normalized spending
+                            customer.supportTickets / 50,                  // Normalized support load
+                            customer.satisfactionScore / 5,                // Normalized satisfaction
+                            contract.duration / 36,                        // Normalized duration
+                            contract.monthlyValue / 10000,                 // Normalized monthly value
+                            customer.size === 'Large' ? 1 : (customer.size === 'Medium' ? 0.5 : 0), // Size encoding
+                            avgContractValue / 100000,                     // Normalized avg contract value
+                            contractDiversity / 5,                         // Contract type diversity
+                            recentContracts / 5,                          // Recent activity
+                            customer.industry === 'Finance' ? 1 : 0       // High-value industry indicator
+                        ],
+                        target: contract.profit
+                    };
+                });
+
+                // Enhanced linear regression with regularization
+                mlModel = trainEnhancedLinearRegression(trainingData);
+                
+                // Calculate comprehensive model metrics
+                const predictions = trainingData.map(d => predict(mlModel, d.features));
+                const actual = trainingData.map(d => d.target);
+                
+                const metrics = calculateModelMetrics(actual, predictions);
+                displayModelMetrics(metrics);
+                createModelChart(actual, predictions);
+                hideLoading('trainBtn', originalText);
+            }, 2000);
+        }
+
+        function trainEnhancedLinearRegression(data) {
+            const n = data.length;
+            const features = data[0].features.length;
+            
+            // Initialize weights with small random values
+            let weights = new Array(features + 1).fill(0).map(() => (Math.random() - 0.5) * 0.01);
+            const learningRate = 0.001;
+            const epochs = 2000;
+            const lambda = 0.01; // L2 regularization
+
+            // Gradient descent with regularization
+            for (let epoch = 0; epoch < epochs; epoch++) {
+                let gradients = new Array(features + 1).fill(0);
+                let totalLoss = 0;
+                
+                for (let i = 0; i < n; i++) {
+                    const x = [1, ...data[i].features]; // Add bias term
+                    const prediction = x.reduce((sum, val, j) => sum + val * weights[j], 0);
+                    const error = prediction - data[i].target;
+                    totalLoss += error * error;
+                    
+                    for (let j = 0; j < weights.length; j++) {
+                        gradients[j] += error * x[j];
+                    }
+                }
+                
+                // Update weights with L2 regularization
+                for (let j = 0; j < weights.length; j++) {
+                    const regularization = j === 0 ? 0 : lambda * weights[j]; // Don't regularize bias
+                    weights[j] -= learningRate * (gradients[j] / n + regularization);
+                }
+                
+                // Adaptive learning rate
+                if (epoch % 500 === 0) {
+                    learningRate *= 0.95;
+                }
+            }
+
+            return weights;
+        }
+
+        function calculateModelMetrics(actual, predicted) {
+            const n = actual.length;
+            const mse = actual.reduce((sum, val, i) => sum + Math.pow(val - predicted[i], 2), 0) / n;
+            const rmse = Math.sqrt(mse);
+            const mae = actual.reduce((sum, val, i) => sum + Math.abs(val - predicted[i]), 0) / n;
+            
+            const meanActual = actual.reduce((a, b) => a + b, 0) / n;
+            const ssRes = actual.reduce((sum, val, i) => sum + Math.pow(val - predicted[i], 2), 0);
+            const ssTot = actual.reduce((sum, val) => sum + Math.pow(val - meanActual, 2), 0);
+            const r2 = 1 - (ssRes / ssTot);
+            
+            // Calculate MAPE (Mean Absolute Percentage Error)
+            const mape = actual.reduce((sum, val, i) => {
+                return sum + (val !== 0 ? Math.abs((val - predicted[i]) / val) : 0);
+            }, 0) / n * 100;
+
+            return { rmse, mae, r2, mape, mse };
+        }
+
+        function predict(model, features) {
+            const x = [1, ...features]; // Add bias term
+            return Math.max(0, x.reduce((sum, val, i) => sum + val * model[i], 0));
+        }
+
+        // Enhanced prediction system
+        function makePredictions() {
+            const originalText = showLoading('predictBtn');
+            
+            setTimeout(() => {
+                if (!mlModel) {
+                    alert('Please train the ML model first!');
+                    hideLoading('predictBtn', originalText);
+                    return;
+                }
+
+                const monthsToPredict = parseInt(document.getElementById('monthsToPredict').value) || 36;
+                const predictions = [];
+
+                for (let customer of customers) {
+                    const customerContracts = contracts.filter(c => c.customerId === customer.id);
+                    const customerOpportunities = simulationResults.filter(s => s.customerId === customer.id);
+                    
+                    // Calculate existing contract value
+                    let existingContractProfit = 0;
+                    for (let contract of customerContracts) {
+                        if (contract.status === 'Open' || contract.status === 'New') {
+                            const remainingMonths = Math.min(monthsToPredict, contract.duration);
+                            const monthlyProfit = contract.profit / contract.duration;
+                            existingContractProfit += monthlyProfit * remainingMonths;
+                        }
+                    }
+
+                    // Calculate opportunity value
+                    let opportunityProfit = 0;
+                    for (let oppResult of customerOpportunities) {
+                        const profitMargin = 0.25; // Assume 25% profit margin
+                        opportunityProfit += oppResult.expectedValue * profitMargin;
+                    }
+
+                    // ML prediction for new business
+                    const avgContractValue = customerContracts.reduce((sum, c) => sum + c.totalValue, 0) / Math.max(customerContracts.length, 1);
+                    const contractDiversity = new Set(customerContracts.map(c => c.type)).size;
+                    const recentContracts = customerContracts.filter(c => 
+                        (Date.now() - c.startDate.getTime()) < (365 * 24 * 60 * 60 * 1000)
+                    ).length;
+
+                    const features = [
+                        customer.creditScore / 1000,
+                        customer.relationshipLength / 60,
+                        customer.avgMonthlySpend / 50000,
+                        customer.supportTickets / 50,
+                        customer.satisfactionScore / 5,
+                        monthsToPredict / 36,
+                        customer.avgMonthlySpend / 10000,
+                        customer.size === 'Large' ? 1 : (customer.size === 'Medium' ? 0.5 : 0),
+                        avgContractValue / 100000,
+                        contractDiversity / 5,
+                        recentContracts / 5,
+                        customer.industry === 'Finance' ? 1 : 0
+                    ];
+
+                    const mlPrediction = predict(mlModel, features);
+                    const timeAdjustedPrediction = mlPrediction * (monthsToPredict / 12);
+                    
+                    const totalPredictedProfit = existingContractProfit + opportunityProfit + timeAdjustedPrediction;
+                    
+                    predictions.push({
+                        customerId: customer.id,
+                        customerName: customer.name,
+                        industry: customer.industry,
+                        size: customer.size,
+                        existingContractProfit: existingContractProfit,
+                        opportunityProfit: opportunityProfit,
+                        mlPrediction: timeAdjustedPrediction,
+                        totalPredictedProfit: totalPredictedProfit,
+                        monthsToPredict: monthsToPredict,
+                        riskScore: calculateEnhancedRiskScore(customer, customerContracts),
+                        confidenceScore: calculateConfidenceScore(customer, customerContracts)
+                    });
+                }
+
+                predictions.sort((a, b) => b.totalPredictedProfit - a.totalPredictedProfit);
+                displayPredictions(predictions);
+                createPredictionChart(predictions);
+                hideLoading('predictBtn', originalText);
+            }, 1500);
+        }
+
+        function calculateEnhancedRiskScore(customer, contracts) {
+            let risk = 0;
+            
+            // Credit risk
+            if (customer.creditScore < 400) risk += 0.25;
+            else if (customer.creditScore < 600) risk += 0.15;
+            
+            // Support burden
+            if (customer.supportTickets > 40) risk += 0.2;
+            else if (customer.supportTickets > 25) risk += 0.1;
+            
+            // Satisfaction risk
+            if (customer.satisfactionScore < 2.5) risk += 0.25;
+            else if (customer.satisfactionScore < 3.5) risk += 0.15;
+            
+            // Relationship maturity
+            if (customer.relationshipLength < 6) risk += 0.15;
+            else if (customer.relationshipLength < 12) risk += 0.05;
+            
+            // Contract concentration risk
+            const totalValue = contracts.reduce((sum, c) => sum + c.totalValue, 0);
+            const avgContractValue = totalValue / contracts.length;
+            if (avgContractValue < 10000) risk += 0.1;
+            
+            return Math.min(1, risk);
+        }
+
+        function calculateConfidenceScore(customer, contracts) {
+            let confidence = 0.5; // Base confidence
+            
+            // Positive factors
+            if (customer.satisfactionScore > 4) confidence += 0.2;
+            if (customer.relationshipLength > 24) confidence += 0.15;
+            if (customer.creditScore > 700) confidence += 0.1;
+            if (contracts.length > 3) confidence += 0.05; // Multiple contracts = more data
+            
+            // Industry stability
+            if (['Healthcare', 'Government', 'Finance'].includes(customer.industry)) {
+                confidence += 0.1;
+            }
+            
+            return Math.min(1, confidence);
+        }
+
+        // Enhanced UI display functions
+        function updateUI() {
+            displayMetrics();
+            createContractChart();
+            displayDataTable();
+            updateCustomerSelect();
+            updateButtonStates();
+        }
+
+        function displayMetrics() {
+            const totalContracts = contracts.length;
+            const totalRevenue = contracts.reduce((sum, c) => sum + c.totalValue, 0);
+            const totalProfit = contracts.reduce((sum, c) => sum + c.profit, 0);
+            const avgProfitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue * 100) : 0;
+            const activeContracts = contracts.filter(c => c.status === 'Open' || c.status === 'New').length;
+
+            document.getElementById('metrics').innerHTML = `
+                <div class="metric-card">
+                    <h3>${customers.length}</h3>
+                    <p>Total Customers</p>
+                </div>
+                <div class="metric-card">
+                    <h3>${totalContracts}</h3>
+                    <p>Total Contracts</p>
+                </div>
+                <div class="metric-card">
+                    <h3>${activeContracts}</h3>
+                    <p>Active Contracts</p>
+                </div>
+                <div class="metric-card">
+                    <h3>$${(totalRevenue / 1000000).toFixed(1)}M</h3>
+                    <p>Total Revenue</p>
+                </div>
+                <div class="metric-card">
+                    <h3>${avgProfitMargin.toFixed(1)}%</h3>
+                    <p>Avg Profit Margin</p>
+                </div>
+                <div class="metric-card">
+                    <h3>${opportunities.length}</h3>
+                    <p>Active Opportunities</p>
+                </div>
+            `;
+        }
+
+        function displayDataTable() {
+            const recentContracts = contracts
+                .sort((a, b) => b.startDate - a.startDate)
+                .slice(0, 15);
+                
+            let tableHTML = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Customer</th>
+                            <th>Industry</th>
+                            <th>Contract Type</th>
+                            <th>Status</th>
+                            <th>Monthly Value</th>
+                            <th>Total Value</th>
+                            <th>Profit</th>
+                            <th>Duration</th>
+                            <th>Start Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            for (let contract of recentContracts) {
+                const customer = customers.find(c => c.id === contract.customerId);
+                tableHTML += `
+                    <tr>
+                        <td><strong>${customer.name}</strong><br><small>${customer.size}</small></td>
+                        <td>${customer.industry}</td>
+                        <td>${contract.type}</td>
+                        <td><span class="status-${contract.status.toLowerCase()}">${contract.status}</span></td>
+                        <td>$${contract.monthlyValue.toLocaleString()}</td>
+                        <td>$${contract.totalValue.toLocaleString()}</td>
+                        <td>$${contract.profit.toLocaleString()}</td>
+                        <td>${contract.duration} months</td>
+                        <td>${contract.startDate.toLocaleDateString()}</td>
+                    </tr>
+                `;
+            }
+
+            tableHTML += '</tbody></table>';
+            document.getElementById('dataTable').innerHTML = tableHTML;
+        }
+
+        function updateCustomerSelect() {
+            const select = document.getElementById('customerSelect');
+            select.innerHTML = '<option value="">Select customer for detailed prediction</option>';
+            
+            for (let customer of customers.sort((a, b) => a.name.localeCompare(b.name))) {
+                const option = document.createElement('option');
+                option.value = customer.id;
+                option.textContent = `${customer.name} (${customer.size}, ${customer.industry})`;
+                select.appendChild(option);
+            }
+        }
+
+        function displayMonteCarloResults() {
+            const totalExpectedValue = simulationResults.reduce((sum, r) => sum + r.expectedValue, 0);
+            const avgConversionRate = simulationResults.length > 0 ? 
+                simulationResults.reduce((sum, r) => sum + r.conversionRate, 0) / simulationResults.length : 0;
+            
+            const highProbabilityOpps = simulationResults.filter(r => r.conversionRate > 0.7).length;
+            const totalOpportunityValue = opportunities.reduce((sum, o) => sum + o.estimatedValue, 0);
+
+            document.getElementById('monteCarloResults').innerHTML = `
+                <div class="prediction-result">
+                    <h3>🎯 Monte Carlo Simulation Results</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 15px 0;">
+                        <div>
+                            <strong>Total Expected Value:</strong><br>
+                            $${totalExpectedValue.toLocaleString()} 
+                            <small>(${((totalExpectedValue/totalOpportunityValue)*100).toFixed(1)}% of total pipeline)</small>
+                        </div>
+                        <div>
+                            <strong>Average Conversion Rate:</strong><br>
+                            ${(avgConversionRate * 100).toFixed(1)}%
+                        </div>
+                        <div>
+                            <strong>High-Probability Opportunities:</strong><br>
+                            ${highProbabilityOpps} of ${simulationResults.length} (>70% conversion rate)
+                        </div>
+                        <div>
+                            <strong>Pipeline Risk Assessment:</strong><br>
+                            ${avgConversionRate > 0.6 ? '🟢 Low Risk' : avgConversionRate > 0.4 ? '🟡 Medium Risk' : '🔴 High Risk'}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayModelMetrics(metrics) {
+            const qualityAssessment = metrics.r2 > 0.8 ? 'Excellent' : 
+                                   metrics.r2 > 0.6 ? 'Good' : 
+                                   metrics.r2 > 0.4 ? 'Fair' : 'Poor';
+            
+            const qualityColor = metrics.r2 > 0.8 ? '#27ae60' : 
+                               metrics.r2 > 0.6 ? '#f39c12' : 
+                               metrics.r2 > 0.4 ? '#e67e22' : '#e74c3c';
+
+            document.getElementById('modelMetrics').innerHTML = `
+                <div class="prediction-result">
+                    <h3>🧠 Model Performance Metrics</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 15px 0;">
+                        <div>
+                            <strong>Model Quality:</strong><br>
+                            <span style="color: ${qualityColor}; font-weight: bold;">${qualityAssessment}</span>
+                            <br><small>R² Score: ${metrics.r2.toFixed(3)}</small>
+                        </div>
+                        <div>
+                            <strong>Average Error:</strong><br>
+                            $${metrics.mae.toLocaleString()}
+                            <br><small>Mean Absolute Error</small>
+                        </div>
+                        <div>
+                            <strong>Root Mean Square Error:</strong><br>
+                            $${metrics.rmse.toLocaleString()}
+                            <br><small>RMSE</small>
+                        </div>
+                        <div>
+                            <strong>Percentage Error:</strong><br>
+                            ${metrics.mape.toFixed(1)}%
+                            <br><small>Mean Absolute Percentage Error</small>
+                        </div>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                        <small><strong>Note:</strong> Model trained on ${contracts.length} contracts across ${customers.length} customers. 
+                        Higher R² values (closer to 1.0) indicate better predictive accuracy.</small>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getRiskIndicator(riskScore) {
+            if (riskScore < 0.3) return '<span class="risk-indicator risk-low">✅ Low Risk</span>';
+            if (riskScore < 0.6) return '<span class="risk-indicator risk-medium">⚡ Medium Risk</span>';
+            return '<span class="risk-indicator risk-high">⚠️ High Risk</span>';
+        }
+
+        function displayPredictions(predictions) {
+            const selectedCustomerId = document.getElementById('customerSelect').value;
+            const monthsToPredict = parseInt(document.getElementById('monthsToPredict').value) || 36;
+            
+            let html = '<div class="prediction-result">';
+            html += `<h3>📈 Customer Profit Predictions (Next ${monthsToPredict} Months)</h3>`;
+            
+            // Summary statistics
+            const totalPredictedProfit = predictions.reduce((sum, p) => sum + p.totalPredictedProfit, 0);
+            const avgRisk = predictions.reduce((sum, p) => sum + p.riskScore, 0) / predictions.length;
+            const highValueCustomers = predictions.filter(p => p.totalPredictedProfit > 100000).length;
+            
+            html += `
+                <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <strong>📊 Portfolio Summary:</strong><br>
+                    Total Predicted Profit: $${totalPredictedProfit.toLocaleString()} | 
+                    Average Risk Score: ${(avgRisk * 100).toFixed(0)}% | 
+                    High-Value Customers (>$100K): ${highValueCustomers}
+                </div>
+            `;
+            
+            const topPredictions = predictions.slice(0, 8);
+            html += '<h4>🏆 Top Customer Predictions:</h4>';
+            
+            for (let pred of topPredictions) {
+                const confidencePercent = (pred.confidenceScore * 100).toFixed(0);
+                html += `
+                    <div style="margin: 15px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #667eea;">
+                        <div style="display: flex; justify-content: between; align-items: center; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 300px;">
+                                <strong style="font-size: 1.1em;">${pred.customerName}</strong>
+                                <span style="background: #e3f2fd; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; margin-left: 10px;">
+                                    ${pred.size} ${pred.industry}
+                                </span><br>
+                                <div style="margin: 8px 0;">
+                                    Expected Profit: <strong>$${pred.totalPredictedProfit.toLocaleString()}</strong><br>
+                                    Confidence: ${confidencePercent}% ${getRiskIndicator(pred.riskScore)}
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; font-size: 0.9em;">
+                            <div>Existing: $${pred.existingContractProfit.toLocaleString()}</div>
+                            <div>Opportunities: $${pred.opportunityProfit.toLocaleString()}</div>
+                            <div>New Business: $${pred.mlPrediction.toLocaleString()}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (selectedCustomerId) {
+                const selectedPred = predictions.find(p => p.customerId == selectedCustomerId);
+                if (selectedPred) {
+                    const customer = customers.find(c => c.id == selectedCustomerId);
+                    const customerContracts = contracts.filter(c => c.customerId == selectedCustomerId);
+                    const customerOpportunities = opportunities.filter(o => o.customerId == selectedCustomerId);
+                    
+                    html += `
+                        <h4>🔍 Detailed Analysis: ${selectedPred.customerName}</h4>
+                        <div class="customer-detail">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                                <div>
+                                    <h5>Customer Profile</h5>
+                                    <p><strong>Industry:</strong> ${customer.industry}</p>
+                                    <p><strong>Size:</strong> ${customer.size}</p>
+                                    <p><strong>Relationship:</strong> ${customer.relationshipLength} months</p>
+                                    <p><strong>Credit Score:</strong> ${customer.creditScore.toFixed(0)}</p>
+                                    <p><strong>Satisfaction:</strong> ${customer.satisfactionScore.toFixed(1)}/5</p>
+                                    <p><strong>Avg Monthly Spend:</strong> $${customer.avgMonthlySpend.toLocaleString()}</p>
+                                </div>
+                                <div>
+                                    <h5>Contract Portfolio</h5>
+                                    <p><strong>Total Contracts:</strong> ${customerContracts.length}</p>
+                                    <p><strong>Active Contracts:</strong> ${customerContracts.filter(c => c.status !== 'Closed').length}</p>
+                                    <p><strong>Contract Types:</strong> ${new Set(customerContracts.map(c => c.type)).size}</p>
+                                    <p><strong>Active Opportunities:</strong> ${customerOpportunities.length}</p>
+                                </div>
+                                <div>
+                                    <h5>Profit Breakdown</h5>
+                                    <p><strong>Existing Contracts:</strong> $${selectedPred.existingContractProfit.toLocaleString()}</p>
+                                    <p><strong>Expected Opportunities:</strong> $${selectedPred.opportunityProfit.toLocaleString()}</p>
+                                    <p><strong>ML Predicted New:</strong> $${selectedPred.mlPrediction.toLocaleString()}</p>
+                                    <p style="border-top: 2px solid #667eea; padding-top: 8px; margin-top: 8px;">
+                                        <strong>Total Expected:</strong> $${selectedPred.totalPredictedProfit.toLocaleString()}
+                                    </p>
+                                </div>
+                            </div>
+                            <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 8px;">
+                                <strong>Risk Assessment:</strong> ${getRiskIndicator(selectedPred.riskScore)}<br>
+                                <strong>Prediction Confidence:</strong> ${(selectedPred.confidenceScore * 100).toFixed(0)}%<br>
+                                <small>Based on historical performance, customer characteristics, and market conditions</small>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            html += '</div>';
+            document.getElementById('predictionResults').innerHTML = html;
+        }
+
+        // Enhanced chart functions with better styling
+        function createContractChart() {
+            const ctx = document.getElementById('contractChart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (charts.contractChart) {
+                charts.contractChart.destroy();
+            }
+            
+            const statusCounts = {
+                'New': contracts.filter(c => c.status === 'New').length,
+                'Open': contracts.filter(c => c.status === 'Open').length,
+                'Closed': contracts.filter(c => c.status === 'Closed').length
+            };
+
+            charts.contractChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(statusCounts),
+                    datasets: [{
+                        data: Object.values(statusCounts),
+                        backgroundColor: ['#27ae60', '#f39c12', '#e74c3c'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Contract Status Distribution',
+                            font: { size: 16, weight: 'bold' }
+                        },
+                        legend: {
+                            position: 'bottom',
+                            labels: { padding: 20, usePointStyle: true }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createSimulationChart() {
+            const ctx = document.getElementById('simulationChart').getContext('2d');
+            
+            if (charts.simulationChart) {
+                charts.simulationChart.destroy();
+            }
+
+            charts.simulationChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Opportunities',
+                        data: simulationResults.map(r => ({
+                            x: r.conversionRate * 100,
+                            y: r.expectedValue
+                        })),
+                        backgroundColor: 'rgba(102, 126, 234, 0.6)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Opportunity Conversion Analysis',
+                            font: { size: 16, weight: 'bold' }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const opportunity = simulationResults[context.dataIndex];
+                                    return `Original Probability: ${(opportunity.originalProbability * 100).toFixed(1)}%`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Conversion Rate (%)',
+                                font: { weight: 'bold' }
+                            },
+                            grid: { color: 'rgba(0,0,0,0.1)' }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Expected Value ($)',
+                                font: { weight: 'bold' }
+                            },
+                            grid: { color: 'rgba(0,0,0,0.1)' },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createModelChart(actual, predicted) {
+            const ctx = document.getElementById('modelChart').getContext('2d');
+            
+            if (charts.modelChart) {
+                charts.modelChart.destroy();
+            }
+            
+            const minVal = Math.min(...actual, ...predicted);
+            const maxVal = Math.max(...actual, ...predicted);
+
+            charts.modelChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Actual vs Predicted',
+                        data: actual.map((val, i) => ({ x: val, y: predicted[i] })),
+                        backgroundColor: 'rgba(118, 75, 162, 0.6)',
+                        borderColor: 'rgba(118, 75, 162, 1)',
+                        borderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }, {
+                        label: 'Perfect Prediction Line',
+                        data: [
+                            { x: minVal, y: minVal },
+                            { x: maxVal, y: maxVal }
+                        ],
+                        type: 'line',
+                        borderColor: '#e74c3c',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        borderDash: [5, 5],
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Model Performance: Actual vs Predicted Profit',
+                            font: { size: 16, weight: 'bold' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Actual Profit ($)',
+                                font: { weight: 'bold' }
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Predicted Profit ($)',
+                                font: { weight: 'bold' }
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createPredictionChart(predictions) {
+            const ctx = document.getElementById('predictionChart').getContext('2d');
+            
+            if (charts.predictionChart) {
+                charts.predictionChart.destroy();
+            }
+            
+            const topPredictions = predictions.slice(0, 10);
+            
+            charts.predictionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: topPredictions.map(p => p.customerName.length > 15 ? 
+                        p.customerName.substring(0, 15) + '...' : p.customerName),
+                    datasets: [{
+                        label: 'Existing Contracts',
+                        data: topPredictions.map(p => p.existingContractProfit),
+                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 1
+                    }, {
+                        label: 'Expected Opportunities',
+                        data: topPredictions.map(p => p.opportunityProfit),
+                        backgroundColor: 'rgba(245, 87, 108, 0.8)',
+                        borderColor: 'rgba(245, 87, 108, 1)',
+                        borderWidth: 1
+                    }, {
+                        label: 'ML Predicted New Business',
+                        data: topPredictions.map(p => p.mlPrediction),
+                        backgroundColor: 'rgba(39, 174, 96, 0.8)',
+                        borderColor: 'rgba(39, 174, 96, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Top 10 Customer Profit Predictions',
+                            font: { size: 16, weight: 'bold' }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                footer: function(tooltipItems) {
+                                    const dataIndex = tooltipItems[0].dataIndex;
+                                    const prediction = topPredictions[dataIndex];
+                                    return `Total: $${prediction.totalPredictedProfit.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            ticks: {
+                                maxRotation: 45,
+                                font: { size: 10 }
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            title: {
+                                display: true,
+                                text: 'Predicted Profit ($)',
+                                font: { weight: 'bold' }
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + (value / 1000).toFixed(0) + 'K';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Customer selection change handler
+        document.getElementById('customerSelect').addEventListener('change', function() {
+            if (simulationResults.length > 0 && mlModel) {
+                makePredictions();
+            }
+        });
+
+        // Initialize the system
+        window.onload = function() {
+            generateData();
+            
+            // Update the GitHub corner link
+            const githubCorner = document.querySelector('.github-corner');
+            githubCorner.href = 'https://github.com/YOUR_USERNAME/calyx-profit-prediction';
+            
+            console.log('Calyx Customer Profit Prediction System initialized');
+        };
+    </script>
+</body>
+</html>
