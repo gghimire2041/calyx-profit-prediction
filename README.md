@@ -12,12 +12,8 @@ Advanced machine learning system for predicting customer lifetime value and prof
 
 ## 🚀 Live Demo
 
-**[View Live Demo](https://YOUR_USERNAME.github.io/calyx-profit-prediction/)**
+**[View Live Demo](https://gghimire2041.github.io/calyx-profit-prediction/)**
 
-## 📊 Screenshots
-
-![Dashboard Overview](screenshots/dashboard.png)
-![Prediction Results](screenshots/predictions.png)
 
 ## 🛠️ Usage
 
